@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Heart, ArrowLeft, UserPlus } from "lucide-react";
+import { Heart, ArrowLeft, UserPlus, Lock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PatientRegister = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [isStaff, setIsStaff] = useState<boolean | null>(null);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -24,8 +27,38 @@ const PatientRegister = () => {
     allergies: ''
   });
 
+  // Check if user is staff
+  useEffect(() => {
+    const checkStaffStatus = async () => {
+      if (!user) {
+        setIsStaff(false);
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('is_staff', { _user_id: user.id });
+      if (error) {
+        console.error('Error checking staff status:', error);
+        setIsStaff(false);
+      } else {
+        setIsStaff(data);
+      }
+    };
+
+    if (!authLoading) {
+      checkStaffStatus();
+    }
+  }, [user, authLoading]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user || !isStaff) {
+      toast.error('ไม่มีสิทธิ์เข้าถึง', {
+        description: 'กรุณาเข้าสู่ระบบในฐานะเจ้าหน้าที่'
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -82,6 +115,57 @@ const PatientRegister = () => {
     }
   };
 
+  // Loading state
+  if (authLoading || isStaff === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-background to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <Heart className="h-12 w-12 text-primary animate-pulse mx-auto mb-4" />
+          <p className="text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Not authenticated or not staff - show login prompt
+  if (!user || !isStaff) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-background to-pink-100 p-4">
+        <div className="max-w-md mx-auto mt-20">
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/auth')}
+            className="mb-4 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            กลับ
+          </Button>
+
+          <Card>
+            <CardHeader className="text-center">
+              <Lock className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <CardTitle className="font-display">ต้องเข้าสู่ระบบ</CardTitle>
+              <CardDescription>
+                การลงทะเบียนผู้ป่วยต้องดำเนินการโดยเจ้าหน้าที่เท่านั้น
+                <br />
+                กรุณาเข้าสู่ระบบในฐานะเจ้าหน้าที่เพื่อดำเนินการ
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                className="w-full" 
+                size="lg"
+                onClick={() => navigate('/auth')}
+              >
+                เข้าสู่ระบบสำหรับเจ้าหน้าที่
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-background to-pink-100 p-4">
       <div className="max-w-2xl mx-auto">
@@ -89,7 +173,7 @@ const PatientRegister = () => {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate('/')}
             className="mb-4 text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />

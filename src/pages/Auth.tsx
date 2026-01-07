@@ -107,7 +107,7 @@ const Auth = () => {
             {/* Patient Card */}
             <Card 
               className="cursor-pointer hover:border-primary hover:shadow-lg transition-all duration-300 group"
-              onClick={handlePatientClick}
+              onClick={() => setSelectedRole('patient')}
             >
               <CardHeader className="text-center pb-4">
                 <div className="mx-auto w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -115,12 +115,12 @@ const Auth = () => {
                 </div>
                 <CardTitle className="text-xl font-display">ผู้ป่วย</CardTitle>
                 <CardDescription>
-                  ลงทะเบียนเพื่อเข้ารับการรักษา
+                  เข้าสู่ระบบเพื่อดูประวัติการรักษา
                 </CardDescription>
               </CardHeader>
               <CardContent className="text-center">
                 <Button variant="outline" className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  ลงทะเบียนผู้ป่วย
+                  เข้าสู่ระบบผู้ป่วย
                 </Button>
               </CardContent>
             </Card>

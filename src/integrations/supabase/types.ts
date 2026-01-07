@@ -79,6 +79,35 @@ export type Database = {
         }
         Relationships: []
       }
+      patient_accounts: {
+        Row: {
+          created_at: string
+          id: string
+          patient_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_accounts_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: true
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null
@@ -228,6 +257,47 @@ export type Database = {
         }
         Relationships: []
       }
+      treatment_plans: {
+        Row: {
+          created_at: string
+          duration: string | null
+          follow_up_date: string | null
+          id: string
+          notes: string | null
+          plan_details: string
+          updated_at: string
+          visit_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          plan_details: string
+          updated_at?: string
+          visit_id: string
+        }
+        Update: {
+          created_at?: string
+          duration?: string | null
+          follow_up_date?: string | null
+          id?: string
+          notes?: string | null
+          plan_details?: string
+          updated_at?: string
+          visit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_plans_visit_id_fkey"
+            columns: ["visit_id"]
+            isOneToOne: false
+            referencedRelation: "visits"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -316,6 +386,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_patient: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

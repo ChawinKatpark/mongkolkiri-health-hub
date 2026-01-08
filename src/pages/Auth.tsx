@@ -19,6 +19,10 @@ const Auth = () => {
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '', fullName: '' });
+  
+  // Patient forms
+  const [patientLoginForm, setPatientLoginForm] = useState({ email: '', password: '' });
+  const [patientSignupForm, setPatientSignupForm] = useState({ email: '', password: '', fullName: '' });
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,8 +63,48 @@ const Auth = () => {
     setLoading(false);
   };
 
-  const handlePatientClick = () => {
-    navigate('/patient-register');
+  // Patient login
+  const handlePatientLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    const { error } = await signIn(patientLoginForm.email, patientLoginForm.password);
+    
+    if (error) {
+      toast.error('เข้าสู่ระบบไม่สำเร็จ', {
+        description: error.message === 'Invalid login credentials' 
+          ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' 
+          : error.message
+      });
+    } else {
+      toast.success('เข้าสู่ระบบสำเร็จ');
+      navigate('/patient');
+    }
+    setLoading(false);
+  };
+
+  // Patient signup
+  const handlePatientSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    if (patientSignupForm.password.length < 6) {
+      toast.error('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร');
+      setLoading(false);
+      return;
+    }
+    
+    const { error } = await signUp(patientSignupForm.email, patientSignupForm.password, patientSignupForm.fullName);
+    
+    if (error) {
+      toast.error('ลงทะเบียนไม่สำเร็จ', { description: error.message });
+    } else {
+      toast.success('ลงทะเบียนสำเร็จ', { 
+        description: 'กรุณาเชื่อมต่อกับข้อมูลผู้ป่วยของคุณ' 
+      });
+      navigate('/patient-link');
+    }
+    setLoading(false);
   };
 
   // Role selection screen
@@ -124,6 +168,158 @@ const Auth = () => {
                 </Button>
               </CardContent>
             </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Patient login/signup form
+  if (selectedRole === 'patient') {
+    return (
+      <div className="min-h-screen flex">
+        {/* Left Side - Decorative */}
+        <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-sage to-sage-dark p-12 flex-col justify-between relative overflow-hidden">
+          <div className="absolute inset-0 opacity-10">
+            <div className="absolute top-20 left-20 w-40 h-40 border-2 border-white rounded-full"></div>
+            <div className="absolute bottom-32 right-16 w-32 h-32 border-2 border-white rounded-full"></div>
+            <div className="absolute top-1/2 left-1/3 w-24 h-24 border-2 border-white rounded-full"></div>
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <Heart className="h-10 w-10 text-white" />
+              <h1 className="text-2xl font-display font-bold text-white">
+                คลินิกแพทย์แผนไทย
+              </h1>
+            </div>
+          </div>
+          
+          <div className="relative z-10">
+            <blockquote className="text-xl text-white/90 italic mb-4">
+              "ดูแลสุขภาพของคุณได้ทุกที่ ทุกเวลา"
+            </blockquote>
+            <p className="text-white/70">— ระบบผู้ป่วยออนไลน์</p>
+          </div>
+        </div>
+
+        {/* Right Side - Login Form */}
+        <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
+          <div className="w-full max-w-md">
+            <Button
+              variant="ghost"
+              onClick={() => setSelectedRole(null)}
+              className="mb-6 text-muted-foreground hover:text-foreground"
+            >
+              ← กลับ
+            </Button>
+
+            <div className="lg:hidden mb-8 text-center">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Heart className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-2xl font-display font-bold text-foreground">
+                คลินิกแพทย์แผนไทย
+              </h1>
+            </div>
+
+            <Tabs defaultValue="login" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="login">เข้าสู่ระบบ</TabsTrigger>
+                <TabsTrigger value="signup">ลงทะเบียน</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="login">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl font-display">เข้าสู่ระบบผู้ป่วย</CardTitle>
+                    <CardDescription>
+                      เข้าสู่ระบบเพื่อดูประวัติการรักษาของคุณ
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handlePatientLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="patient-login-email">อีเมล</Label>
+                        <Input
+                          id="patient-login-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={patientLoginForm.email}
+                          onChange={(e) => setPatientLoginForm({ ...patientLoginForm, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="patient-login-password">รหัสผ่าน</Label>
+                        <Input
+                          id="patient-login-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={patientLoginForm.password}
+                          onChange={(e) => setPatientLoginForm({ ...patientLoginForm, password: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="signup">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-xl font-display">ลงทะเบียนผู้ป่วย</CardTitle>
+                    <CardDescription>
+                      สร้างบัญชีเพื่อเข้าถึงประวัติการรักษา
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <form onSubmit={handlePatientSignup} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="patient-signup-name">ชื่อ-นามสกุล</Label>
+                        <Input
+                          id="patient-signup-name"
+                          type="text"
+                          placeholder="ชื่อ นามสกุล"
+                          value={patientSignupForm.fullName}
+                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, fullName: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="patient-signup-email">อีเมล</Label>
+                        <Input
+                          id="patient-signup-email"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={patientSignupForm.email}
+                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="patient-signup-password">รหัสผ่าน</Label>
+                        <Input
+                          id="patient-signup-password"
+                          type="password"
+                          placeholder="อย่างน้อย 6 ตัวอักษร"
+                          value={patientSignupForm.password}
+                          onChange={(e) => setPatientSignupForm({ ...patientSignupForm, password: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <Button type="submit" className="w-full" disabled={loading}>
+                        {loading ? 'กำลังลงทะเบียน...' : 'ลงทะเบียน'}
+                      </Button>
+                    </form>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>

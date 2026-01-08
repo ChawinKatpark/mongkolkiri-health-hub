@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,8 @@ import {
   AlertTriangle, 
   Activity,
   Stethoscope,
-  CreditCard
+  CreditCard,
+  ClipboardList
 } from 'lucide-react';
 import { differenceInYears } from 'date-fns';
 
@@ -39,6 +41,7 @@ const statusGroups = {
 };
 
 const Queue = () => {
+  const navigate = useNavigate();
   const { data: visits = [], isLoading } = useTodayQueue();
   const updateStatus = useUpdateVisitStatus();
 
@@ -73,6 +76,9 @@ const Queue = () => {
       : null;
     const hasAllergies = patient?.allergies && patient.allergies.length > 0;
     const nextStatus = getNextStatus(visit.status);
+    
+    // Show consult button for statuses in consultation flow
+    const showConsultButton = ['WaitingForDoctor', 'InConsultation', 'Diagnosing', 'Ordering', 'OrderConfirmed'].includes(visit.status);
 
     return (
       <div 
@@ -113,15 +119,29 @@ const Queue = () => {
             {statusLabels[visit.status]}
           </Badge>
           
-          {nextStatus && (
-            <Button 
-              size="sm" 
-              onClick={() => handleStatusChange(visit.id, nextStatus)}
-              disabled={updateStatus.isPending}
-            >
-              {statusLabels[nextStatus]}
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {showConsultButton && (
+              <Button 
+                size="sm"
+                variant="outline"
+                onClick={() => navigate(`/visit/${visit.id}/consult`)}
+                className="gap-1"
+              >
+                <ClipboardList className="w-4 h-4" />
+                เข้าตรวจ
+              </Button>
+            )}
+            
+            {nextStatus && (
+              <Button 
+                size="sm" 
+                onClick={() => handleStatusChange(visit.id, nextStatus)}
+                disabled={updateStatus.isPending}
+              >
+                {statusLabels[nextStatus]}
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Allergies Detail */}

@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUserRole } from '@/hooks/useUserRole';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,16 +40,29 @@ const statusColors: Record<VisitStatus, string> = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const { loading } = useAuth();
+  const { isPatient, isStaff, isLoading: roleLoading } = useUserRole();
   const { data: visits = [], isLoading: visitsLoading } = useTodayQueue();
   const { data: patients = [] } = usePatients();
   const updateStatus = useUpdateVisitStatus();
 
-  if (loading) {
+  // Redirect patients to patient dashboard
+  useEffect(() => {
+    if (!roleLoading && isPatient && !isStaff) {
+      navigate('/patient', { replace: true });
+    }
+  }, [roleLoading, isPatient, isStaff, navigate]);
+
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse-soft text-primary">กำลังโหลด...</div>
       </div>
     );
+  }
+
+  // Don't render staff dashboard for patients
+  if (isPatient && !isStaff) {
+    return null;
   }
 
   const queueVisits = visits.filter(v => 

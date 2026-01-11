@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { usePatientAccount } from "@/hooks/usePatientAccount";
+import { useUserRole } from "@/hooks/useUserRole";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
@@ -23,10 +24,12 @@ import VisitConsultation from "./pages/VisitConsultation";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Staff-only route protection
+const StaffProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
+  const { isPatient, isStaff, isLoading: roleLoading } = useUserRole();
   
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse-soft text-primary font-display">กำลังโหลด...</div>
@@ -36,16 +39,23 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Redirect patients to patient dashboard
+  if (isPatient && !isStaff) {
+    return <Navigate to="/patient" replace />;
   }
   
   return <>{children}</>;
 };
 
+// Patient-only route protection
 const PatientProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
   const { data: patientAccount, isLoading: accountLoading } = usePatientAccount();
+  const { isStaff, isLoading: roleLoading } = useUserRole();
   
-  if (loading || accountLoading) {
+  if (loading || accountLoading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-pulse-soft text-primary font-display">กำลังโหลด...</div>
@@ -55,6 +65,11 @@ const PatientProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Staff members without patient accounts go to staff dashboard
+  if (isStaff && !patientAccount) {
+    return <Navigate to="/" replace />;
   }
 
   if (!patientAccount) {
@@ -83,11 +98,11 @@ const AppRoutes = () => {
       <Route path="/patient-signup" element={<PatientSignup />} />
       
       {/* Staff routes */}
-      <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-      <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
-      <Route path="/patients" element={<ProtectedRoute><Patients /></ProtectedRoute>} />
-      <Route path="/queue" element={<ProtectedRoute><Queue /></ProtectedRoute>} />
-      <Route path="/consultation/:visitId" element={<ProtectedRoute><VisitConsultation /></ProtectedRoute>} />
+      <Route path="/" element={<StaffProtectedRoute><Index /></StaffProtectedRoute>} />
+      <Route path="/register" element={<StaffProtectedRoute><Register /></StaffProtectedRoute>} />
+      <Route path="/patients" element={<StaffProtectedRoute><Patients /></StaffProtectedRoute>} />
+      <Route path="/queue" element={<StaffProtectedRoute><Queue /></StaffProtectedRoute>} />
+      <Route path="/consultation/:visitId" element={<StaffProtectedRoute><VisitConsultation /></StaffProtectedRoute>} />
       
       {/* Patient routes */}
       <Route path="/patient" element={<PatientProtectedRoute><PatientDashboard /></PatientProtectedRoute>} />

@@ -39,30 +39,20 @@ export const useLinkPatientAccount = () => {
     mutationFn: async ({ hn, nationalId }: { hn: string; nationalId: string }) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Find patient by HN and national ID
-      const { data: patient, error: findError } = await supabase
-        .from('patients')
-        .select('id, hn, national_id')
-        .eq('hn', hn.toUpperCase())
-        .maybeSingle();
+      // Use secure RPC function to verify patient (bypasses RLS safely)
+      const { data: patientId, error: verifyError } = await supabase
+        .rpc('verify_patient_for_linking', {
+          p_hn: hn,
+          p_national_id: nationalId
+        });
 
-      if (findError) throw findError;
-      if (!patient) throw new Error('ไม่พบข้อมูลผู้ป่วย กรุณาตรวจสอบหมายเลข HN');
-
-      // Verify national ID matches
-      if (patient.national_id !== nationalId) {
-        throw new Error('เลขบัตรประชาชนไม่ตรงกับข้อมูลในระบบ');
+      if (verifyError) {
+        // Extract error message from Postgres exception
+        throw new Error(verifyError.message);
       }
 
-      // Check if patient is already linked
-      const { data: existingLink } = await supabase
-        .from('patient_accounts')
-        .select('id')
-        .eq('patient_id', patient.id)
-        .maybeSingle();
-
-      if (existingLink) {
-        throw new Error('ข้อมูลผู้ป่วยนี้ถูกเชื่อมโยงกับบัญชีอื่นแล้ว');
+      if (!patientId) {
+        throw new Error('ไม่พบข้อมูลผู้ป่วย กรุณาตรวจสอบหมายเลข HN');
       }
 
       // Create patient account link
@@ -70,7 +60,7 @@ export const useLinkPatientAccount = () => {
         .from('patient_accounts')
         .insert({
           user_id: user.id,
-          patient_id: patient.id
+          patient_id: patientId
         })
         .select()
         .single();

@@ -388,6 +388,10 @@ export type Database = {
       }
       is_patient: { Args: { _user_id: string }; Returns: boolean }
       is_staff: { Args: { _user_id: string }; Returns: boolean }
+      verify_patient_for_linking: {
+        Args: { p_hn: string; p_national_id: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist"

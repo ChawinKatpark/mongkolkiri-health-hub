@@ -93,7 +93,13 @@ export const useCreatePatient = () => {
       toast.success('ลงทะเบียนผู้ป่วยสำเร็จ');
     },
     onError: (error: Error) => {
-      toast.error('เกิดข้อผิดพลาด', { description: error.message });
+      if (error.message.includes('row-level security') || error.message.includes('violates')) {
+        toast.error('ไม่มีสิทธิ์ลงทะเบียนผู้ป่วย', {
+          description: 'บัญชีนี้ยังไม่ได้รับสิทธิ์เจ้าหน้าที่ กรุณาติดต่อผู้ดูแลระบบ',
+        });
+      } else {
+        toast.error('เกิดข้อผิดพลาด', { description: error.message });
+      }
     }
   });
 };

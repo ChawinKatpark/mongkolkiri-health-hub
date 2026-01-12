@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { usePatientAccount } from "@/hooks/usePatientAccount";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Register from "./pages/Register";
@@ -13,6 +14,7 @@ import PatientRegister from "./pages/PatientRegister";
 import Patients from "./pages/Patients";
 import Queue from "./pages/Queue";
 import NotFound from "./pages/NotFound";
+import NoPermission from "./pages/NoPermission";
 import PatientLinkPage from "./pages/PatientLinkPage";
 import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/patient/PatientDashboard";
@@ -21,6 +23,7 @@ import PatientVisitHistory from "./pages/patient/PatientVisitHistory";
 import PatientVisitDetail from "./pages/patient/PatientVisitDetail";
 import PatientMedicationHistory from "./pages/patient/PatientMedicationHistory";
 import VisitConsultation from "./pages/VisitConsultation";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +47,35 @@ const StaffProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   // Redirect patients to patient dashboard
   if (isPatient && !isStaff) {
     return <Navigate to="/patient" replace />;
+  }
+
+  // Non-staff, non-patient users cannot access staff pages
+  if (!isStaff && !isPatient) {
+    return <Navigate to="/no-permission" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Admin-only route protection
+const AdminProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+  const { isAdmin, isLoading: adminLoading } = useIsAdmin();
+  
+  if (loading || adminLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse-soft text-primary font-display">กำลังโหลด...</div>
+      </div>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/no-permission" replace />;
   }
   
   return <>{children}</>;
@@ -96,6 +128,10 @@ const AppRoutes = () => {
       <Route path="/patient-register" element={<PatientRegister />} />
       <Route path="/patient-link" element={<PatientLinkPage />} />
       <Route path="/patient-signup" element={<PatientSignup />} />
+      <Route path="/no-permission" element={<NoPermission />} />
+      
+      {/* Admin routes */}
+      <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
       
       {/* Staff routes */}
       <Route path="/" element={<StaffProtectedRoute><Index /></StaffProtectedRoute>} />

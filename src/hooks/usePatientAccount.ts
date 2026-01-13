@@ -36,13 +36,12 @@ export const useLinkPatientAccount = () => {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ hn, nationalId }: { hn: string; nationalId: string }) => {
+    mutationFn: async ({ nationalId }: { nationalId: string }) => {
       if (!user) throw new Error('Not authenticated');
 
-      // Use secure RPC function to verify patient (bypasses RLS safely)
+      // Use secure RPC function to verify patient by national ID only
       const { data: patientId, error: verifyError } = await supabase
-        .rpc('verify_patient_for_linking', {
-          p_hn: hn,
+        .rpc('verify_patient_by_national_id', {
           p_national_id: nationalId
         });
 
@@ -52,7 +51,7 @@ export const useLinkPatientAccount = () => {
       }
 
       if (!patientId) {
-        throw new Error('ไม่พบข้อมูลผู้ป่วย กรุณาตรวจสอบหมายเลข HN');
+        throw new Error('ไม่พบข้อมูลผู้ป่วย กรุณาตรวจสอบเลขบัตรประชาชน');
       }
 
       // Create patient account link

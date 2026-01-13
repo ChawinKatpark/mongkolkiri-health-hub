@@ -13,13 +13,12 @@ const PatientLinkPage = () => {
   const { user } = useAuth();
   const linkAccount = useLinkPatientAccount();
   
-  const [hn, setHn] = useState("");
   const [nationalId, setNationalId] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    await linkAccount.mutateAsync({ hn, nationalId });
+    await linkAccount.mutateAsync({ nationalId });
     navigate("/patient");
   };
 
@@ -65,26 +64,16 @@ const PatientLinkPage = () => {
             </div>
             <CardTitle className="text-center">ยืนยันตัวตน</CardTitle>
             <CardDescription className="text-center">
-              กรอกหมายเลข HN และเลขบัตรประชาชนที่ลงทะเบียนไว้
+              กรอกเลขบัตรประชาชนที่ลงทะเบียนไว้
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="hn">หมายเลข HN</Label>
-                <Input
-                  id="hn"
-                  placeholder="เช่น HN250001"
-                  value={hn}
-                  onChange={(e) => setHn(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="nationalId">เลขบัตรประชาชน 13 หลัก</Label>
                 <Input
                   id="nationalId"
-                  placeholder="X-XXXX-XXXXX-XX-X"
+                  placeholder="กรอกเลขบัตรประชาชน 13 หลัก"
                   value={nationalId}
                   onChange={(e) => setNationalId(e.target.value)}
                   maxLength={13}

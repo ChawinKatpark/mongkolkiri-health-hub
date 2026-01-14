@@ -396,6 +396,10 @@ export type Database = {
         Args: { p_hn: string; p_national_id: string }
         Returns: string
       }
+      verify_patient_for_signup: {
+        Args: { p_dob: string; p_national_id: string; p_phone: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "doctor" | "nurse" | "pharmacist" | "receptionist"

@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
+export interface VerifiedPatient {
+  patient_id: string;
+  first_name: string;
+  last_name: string;
+}
+
 export interface PatientAccount {
   id: string;
   user_id: string;
@@ -31,6 +37,35 @@ export const usePatientAccount = () => {
   });
 };
 
+export const useVerifyPatientForSignup = () => {
+  return useMutation({
+    mutationFn: async ({ 
+      nationalId, 
+      dob, 
+      phone 
+    }: { 
+      nationalId: string; 
+      dob: string; 
+      phone: string;
+    }) => {
+      const { data, error } = await supabase.rpc('verify_patient_for_signup', {
+        p_national_id: nationalId,
+        p_dob: dob,
+        p_phone: phone
+      });
+
+      if (error) throw new Error(error.message);
+      
+      // Parse the JSON response
+      const result = data as unknown as VerifiedPatient;
+      return result;
+    },
+    onError: (error: Error) => {
+      toast.error('ไม่สามารถยืนยันตัวตนได้', { description: error.message });
+    }
+  });
+};
+
 export const useLinkPatientAccount = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -46,7 +81,6 @@ export const useLinkPatientAccount = () => {
         });
 
       if (verifyError) {
-        // Extract error message from Postgres exception
         throw new Error(verifyError.message);
       }
 

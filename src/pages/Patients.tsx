@@ -13,7 +13,8 @@ import {
   AlertTriangle, 
   Calendar,
   Phone,
-  Plus
+  Plus,
+  Eye
 } from 'lucide-react';
 import { differenceInYears, format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -133,6 +134,15 @@ const Patients = () => {
 
                       {/* Actions */}
                       <div className="flex gap-2 sm:ml-auto">
+                        <Button 
+                          size="sm" 
+                          variant="ghost"
+                          onClick={() => navigate(`/patients/${patient.id}`)}
+                          className="gap-1"
+                        >
+                          <Eye className="w-4 h-4" />
+                          ดูข้อมูล
+                        </Button>
                         <Button 
                           size="sm" 
                           variant="outline"

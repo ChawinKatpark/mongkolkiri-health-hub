@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, 
   User, 
@@ -18,10 +24,12 @@ import {
   ClipboardList,
   Stethoscope,
   Pill,
-  FileText
+  Plus
 } from 'lucide-react';
 import { differenceInYears, format } from 'date-fns';
 import { th } from 'date-fns/locale';
+import { usePatientDiagnoses, useCreatePatientDiagnosis } from '@/hooks/usePatientDiagnoses';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PatientWithVisits {
   id: string;
@@ -41,12 +49,6 @@ interface PatientWithVisits {
     status: string;
     chief_complaint: string | null;
     queue_number: number | null;
-    diagnoses: {
-      id: string;
-      icd10_code: string;
-      description: string | null;
-      diagnosis_type: string | null;
-    }[];
     prescriptions: {
       id: string;
       quantity: number;
@@ -68,6 +70,17 @@ interface PatientWithVisits {
 const PatientDetail = () => {
   const { patientId } = useParams<{ patientId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Dialog state
+  const [diagnosisDialogOpen, setDiagnosisDialogOpen] = useState(false);
+  const [newDiagnosis, setNewDiagnosis] = useState({
+    diagnosis_date: format(new Date(), 'yyyy-MM-dd'),
+    icd10_code: '',
+    description: '',
+    diagnosis_type: 'primary',
+    notes: ''
+  });
 
   const { data: patient, isLoading } = useQuery({
     queryKey: ['patient-detail', patientId],
@@ -82,7 +95,6 @@ const PatientDetail = () => {
             status,
             chief_complaint,
             queue_number,
-            diagnoses (id, icd10_code, description, diagnosis_type),
             prescriptions (id, quantity, usage_instruction, medicine:medicines(name_thai, name_english)),
             treatment_plans (id, plan_details, duration, follow_up_date)
           )
@@ -96,6 +108,34 @@ const PatientDetail = () => {
     },
     enabled: !!patientId
   });
+
+  // Fetch patient diagnoses from new standalone table
+  const { data: patientDiagnoses = [], isLoading: diagnosesLoading } = usePatientDiagnoses(patientId || '');
+  const createDiagnosis = useCreatePatientDiagnosis();
+
+  const handleAddDiagnosis = async () => {
+    if (!patientId || !newDiagnosis.icd10_code.trim()) return;
+    
+    await createDiagnosis.mutateAsync({
+      patient_id: patientId,
+      diagnosis_date: newDiagnosis.diagnosis_date,
+      icd10_code: newDiagnosis.icd10_code.trim(),
+      description: newDiagnosis.description.trim() || undefined,
+      diagnosis_type: newDiagnosis.diagnosis_type,
+      notes: newDiagnosis.notes.trim() || undefined,
+      created_by: user?.id
+    });
+    
+    // Reset form and close dialog
+    setNewDiagnosis({
+      diagnosis_date: format(new Date(), 'yyyy-MM-dd'),
+      icd10_code: '',
+      description: '',
+      diagnosis_type: 'primary',
+      notes: ''
+    });
+    setDiagnosisDialogOpen(false);
+  };
 
   if (isLoading) {
     return (
@@ -125,11 +165,6 @@ const PatientDetail = () => {
   const age = differenceInYears(new Date(), new Date(patient.dob));
   const hasAllergies = patient.allergies && patient.allergies.length > 0;
   const genderLabel = patient.gender === 'male' ? 'ชาย' : patient.gender === 'female' ? 'หญิง' : 'อื่นๆ';
-
-  // Collect all diagnoses across visits
-  const allDiagnoses = patient.visits.flatMap(v => 
-    v.diagnoses.map(d => ({ ...d, visit_date: v.visit_date, visit_id: v.id }))
-  );
 
   return (
     <DashboardLayout>
@@ -226,21 +261,68 @@ const PatientDetail = () => {
         </Card>
 
         {/* Tabs for Medical History */}
-        <Tabs defaultValue="visits" className="space-y-4">
+        <Tabs defaultValue="diagnoses" className="space-y-4">
           <TabsList className="grid grid-cols-3 w-full max-w-md">
-            <TabsTrigger value="visits" className="gap-1">
-              <ClipboardList className="h-4 w-4" />
-              ประวัติการเข้ารับบริการ
-            </TabsTrigger>
             <TabsTrigger value="diagnoses" className="gap-1">
               <Stethoscope className="h-4 w-4" />
               ประวัติการวินิจฉัย
+            </TabsTrigger>
+            <TabsTrigger value="visits" className="gap-1">
+              <ClipboardList className="h-4 w-4" />
+              ประวัติการเข้ารับบริการ
             </TabsTrigger>
             <TabsTrigger value="medications" className="gap-1">
               <Pill className="h-4 w-4" />
               ประวัติการรับยา
             </TabsTrigger>
           </TabsList>
+
+          {/* Diagnosis History - Now uses standalone patient_diagnoses table */}
+          <TabsContent value="diagnoses">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-lg">ประวัติการวินิจฉัย ({patientDiagnoses.length} รายการ)</CardTitle>
+                <Button onClick={() => setDiagnosisDialogOpen(true)} size="sm" className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  เพิ่มการวินิจฉัย
+                </Button>
+              </CardHeader>
+              <CardContent>
+                {diagnosesLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ) : patientDiagnoses.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-8">ยังไม่มีประวัติการวินิจฉัย</p>
+                ) : (
+                  <div className="space-y-3">
+                    {patientDiagnoses.map((diagnosis) => (
+                      <div key={diagnosis.id} className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge className="font-mono">{diagnosis.icd10_code}</Badge>
+                            <Badge variant={diagnosis.diagnosis_type === 'primary' ? 'default' : 'secondary'}>
+                              {diagnosis.diagnosis_type === 'primary' ? 'หลัก' : 'รอง'}
+                            </Badge>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(diagnosis.diagnosis_date), 'd MMM yyyy', { locale: th })}
+                          </span>
+                        </div>
+                        {diagnosis.description && (
+                          <p className="text-sm">{diagnosis.description}</p>
+                        )}
+                        {diagnosis.notes && (
+                          <p className="text-sm text-muted-foreground mt-1">{diagnosis.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Visit History */}
           <TabsContent value="visits">
@@ -274,50 +356,6 @@ const PatientDetail = () => {
                           <p className="text-sm text-muted-foreground">
                             อาการ: {visit.chief_complaint}
                           </p>
-                        )}
-                        {visit.diagnoses.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {visit.diagnoses.map((d) => (
-                              <Badge key={d.id} variant="outline" className="text-xs">
-                                {d.icd10_code}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Diagnosis History */}
-          <TabsContent value="diagnoses">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">ประวัติการวินิจฉัย ({allDiagnoses.length} รายการ)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {allDiagnoses.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">ยังไม่มีประวัติการวินิจฉัย</p>
-                ) : (
-                  <div className="space-y-3">
-                    {allDiagnoses.map((diagnosis) => (
-                      <div key={diagnosis.id} className="p-4 rounded-lg border bg-card">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <Badge className="font-mono">{diagnosis.icd10_code}</Badge>
-                            <Badge variant={diagnosis.diagnosis_type === 'primary' ? 'default' : 'secondary'}>
-                              {diagnosis.diagnosis_type === 'primary' ? 'หลัก' : 'รอง'}
-                            </Badge>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(diagnosis.visit_date), 'd MMM yyyy', { locale: th })}
-                          </span>
-                        </div>
-                        {diagnosis.description && (
-                          <p className="text-sm">{diagnosis.description}</p>
                         )}
                       </div>
                     ))}
@@ -367,6 +405,80 @@ const PatientDetail = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Add Diagnosis Dialog */}
+        <Dialog open={diagnosisDialogOpen} onOpenChange={setDiagnosisDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>เพิ่มการวินิจฉัยใหม่</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="diagnosis_date">วันที่วินิจฉัย</Label>
+                <Input
+                  id="diagnosis_date"
+                  type="date"
+                  value={newDiagnosis.diagnosis_date}
+                  onChange={(e) => setNewDiagnosis(prev => ({ ...prev, diagnosis_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="icd10_code">รหัส ICD-10 *</Label>
+                <Input
+                  id="icd10_code"
+                  placeholder="เช่น J06.9"
+                  value={newDiagnosis.icd10_code}
+                  onChange={(e) => setNewDiagnosis(prev => ({ ...prev, icd10_code: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">คำอธิบาย</Label>
+                <Input
+                  id="description"
+                  placeholder="เช่น Upper respiratory infection"
+                  value={newDiagnosis.description}
+                  onChange={(e) => setNewDiagnosis(prev => ({ ...prev, description: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="diagnosis_type">ประเภท</Label>
+                <Select
+                  value={newDiagnosis.diagnosis_type}
+                  onValueChange={(value) => setNewDiagnosis(prev => ({ ...prev, diagnosis_type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="primary">หลัก (Primary)</SelectItem>
+                    <SelectItem value="secondary">รอง (Secondary)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">หมายเหตุ</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="หมายเหตุเพิ่มเติม..."
+                  value={newDiagnosis.notes}
+                  onChange={(e) => setNewDiagnosis(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDiagnosisDialogOpen(false)}>
+                ยกเลิก
+              </Button>
+              <Button 
+                onClick={handleAddDiagnosis} 
+                disabled={!newDiagnosis.icd10_code.trim() || createDiagnosis.isPending}
+              >
+                {createDiagnosis.isPending ? 'กำลังบันทึก...' : 'บันทึก'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

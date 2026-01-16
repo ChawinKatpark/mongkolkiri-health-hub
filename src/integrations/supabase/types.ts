@@ -108,6 +108,57 @@ export type Database = {
           },
         ]
       }
+      patient_diagnoses: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          diagnosis_date: string
+          diagnosis_type: string | null
+          icd10_code: string
+          id: string
+          notes: string | null
+          patient_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          diagnosis_date?: string
+          diagnosis_type?: string | null
+          icd10_code: string
+          id?: string
+          notes?: string | null
+          patient_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          diagnosis_date?: string
+          diagnosis_type?: string | null
+          icd10_code?: string
+          id?: string
+          notes?: string | null
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_diagnoses_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_diagnoses_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patients: {
         Row: {
           address: string | null

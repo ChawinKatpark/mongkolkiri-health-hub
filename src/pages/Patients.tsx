@@ -6,23 +6,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { usePatients } from '@/hooks/usePatients';
-import { useCreateVisit } from '@/hooks/useVisits';
 import { 
   Search, 
   UserPlus, 
   AlertTriangle, 
   Calendar,
   Phone,
-  Plus,
   Eye
 } from 'lucide-react';
-import { differenceInYears, format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { differenceInYears } from 'date-fns';
 
 const Patients = () => {
   const navigate = useNavigate();
   const { data: patients = [], isLoading } = usePatients();
-  const createVisit = useCreateVisit();
   const [search, setSearch] = useState('');
 
   const filteredPatients = patients.filter(patient => {
@@ -35,10 +31,6 @@ const Patients = () => {
       (patient.phone && patient.phone.includes(search))
     );
   });
-
-  const handleAddToQueue = async (patientId: string) => {
-    await createVisit.mutateAsync(patientId);
-  };
 
   return (
     <DashboardLayout>
@@ -142,16 +134,6 @@ const Patients = () => {
                         >
                           <Eye className="w-4 h-4" />
                           ดูข้อมูล
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => handleAddToQueue(patient.id)}
-                          disabled={createVisit.isPending}
-                          className="gap-1"
-                        >
-                          <Plus className="w-4 h-4" />
-                          เพิ่มคิว
                         </Button>
                       </div>
                     </div>

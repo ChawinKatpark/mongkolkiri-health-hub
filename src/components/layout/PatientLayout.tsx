@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Heart,
   Home,
-  FileText,
   Pill,
   LogOut,
   Menu,
@@ -21,7 +20,6 @@ interface PatientLayoutProps {
 const navigation = [
   { name: "หน้าหลัก", href: "/patient", icon: Home },
   { name: "ข้อมูลส่วนตัว", href: "/patient/profile", icon: User },
-  { name: "ประวัติการรักษา", href: "/patient/visits", icon: FileText },
   { name: "ประวัติการรับยา", href: "/patient/medications", icon: Pill },
 ];
 

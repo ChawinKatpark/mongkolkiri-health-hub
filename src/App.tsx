@@ -11,15 +11,11 @@ import Auth from "./pages/Auth";
 import Register from "./pages/Register";
 import PatientRegister from "./pages/PatientRegister";
 import Patients from "./pages/Patients";
-import Queue from "./pages/Queue";
 import NotFound from "./pages/NotFound";
 import PatientSignup from "./pages/PatientSignup";
 import PatientDashboard from "./pages/patient/PatientDashboard";
 import PatientProfile from "./pages/patient/PatientProfile";
-import PatientVisitHistory from "./pages/patient/PatientVisitHistory";
-import PatientVisitDetail from "./pages/patient/PatientVisitDetail";
 import PatientMedicationHistory from "./pages/patient/PatientMedicationHistory";
-import VisitConsultation from "./pages/VisitConsultation";
 import PatientDetail from "./pages/PatientDetail";
 
 const queryClient = new QueryClient();
@@ -101,14 +97,10 @@ const AppRoutes = () => {
       <Route path="/register" element={<StaffProtectedRoute><Register /></StaffProtectedRoute>} />
       <Route path="/patients" element={<StaffProtectedRoute><Patients /></StaffProtectedRoute>} />
       <Route path="/patients/:patientId" element={<StaffProtectedRoute><PatientDetail /></StaffProtectedRoute>} />
-      <Route path="/queue" element={<StaffProtectedRoute><Queue /></StaffProtectedRoute>} />
-      <Route path="/consultation/:visitId" element={<StaffProtectedRoute><VisitConsultation /></StaffProtectedRoute>} />
       
       {/* Patient routes */}
       <Route path="/patient" element={<PatientProtectedRoute><PatientDashboard /></PatientProtectedRoute>} />
       <Route path="/patient/profile" element={<PatientProtectedRoute><PatientProfile /></PatientProtectedRoute>} />
-      <Route path="/patient/visits" element={<PatientProtectedRoute><PatientVisitHistory /></PatientProtectedRoute>} />
-      <Route path="/patient/visits/:id" element={<PatientProtectedRoute><PatientVisitDetail /></PatientProtectedRoute>} />
       <Route path="/patient/medications" element={<PatientProtectedRoute><PatientMedicationHistory /></PatientProtectedRoute>} />
       
       <Route path="*" element={<NotFound />} />

@@ -7,7 +7,6 @@ import {
   LayoutDashboard, 
   UserPlus, 
   Users, 
-  ClipboardList,
   LogOut,
   Menu,
   X,
@@ -23,7 +22,6 @@ const navigation = [
   { name: 'แดชบอร์ด', href: '/', icon: LayoutDashboard },
   { name: 'ลงทะเบียนผู้ป่วย', href: '/register', icon: UserPlus },
   { name: 'รายชื่อผู้ป่วย', href: '/patients', icon: Users },
-  { name: 'คิวรอตรวจ', href: '/queue', icon: ClipboardList },
 ];
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {

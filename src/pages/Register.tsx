@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, differenceInYears, parse } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { differenceInYears } from 'date-fns';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useCreatePatient } from '@/hooks/usePatients';
-import { useCreateVisit } from '@/hooks/useVisits';
 import { UserPlus, AlertTriangle, X, Calendar, Phone, MapPin, CreditCard } from 'lucide-react';
 
 const patientSchema = z.object({
@@ -32,10 +30,8 @@ type PatientFormData = z.infer<typeof patientSchema>;
 const Register = () => {
   const navigate = useNavigate();
   const createPatient = useCreatePatient();
-  const createVisit = useCreateVisit();
   const [allergies, setAllergies] = useState<string[]>([]);
   const [newAllergy, setNewAllergy] = useState('');
-  const [addToQueue, setAddToQueue] = useState(true);
 
   const {
     register,
@@ -66,7 +62,7 @@ const Register = () => {
 
   const onSubmit = async (data: PatientFormData) => {
     try {
-      const patient = await createPatient.mutateAsync({
+      await createPatient.mutateAsync({
         first_name: data.first_name,
         last_name: data.last_name,
         dob: data.dob,
@@ -76,10 +72,6 @@ const Register = () => {
         phone: data.phone || undefined,
         address: data.address || undefined
       });
-
-      if (addToQueue && patient) {
-        await createVisit.mutateAsync(patient.id);
-      }
 
       navigate('/');
     } catch (error) {
@@ -266,20 +258,6 @@ const Register = () => {
                     </div>
                   </div>
                 )}
-              </div>
-
-              {/* Queue Option */}
-              <div className="flex items-center gap-3 p-4 rounded-xl bg-sage-light/50 border border-sage/20">
-                <input
-                  type="checkbox"
-                  id="addToQueue"
-                  checked={addToQueue}
-                  onChange={(e) => setAddToQueue(e.target.checked)}
-                  className="w-5 h-5 rounded border-sage text-primary focus:ring-primary"
-                />
-                <Label htmlFor="addToQueue" className="cursor-pointer">
-                  เพิ่มเข้าคิวรอตรวจวันนี้
-                </Label>
               </div>
 
               {/* Submit Button */}
